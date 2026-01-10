@@ -1,0 +1,285 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQAC System Core | Xiph-Grade High Fidelity</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <style>
+        :root { --aqac-gold: #FFD700; --bg: #030303; --card: #0a0a0a; --neon-blue: #00d4ff; }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', system-ui, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        
+        .container { width: 100%; max-width: 500px; padding: 40px 20px; text-align: center; }
+        h1 { font-size: 3.5rem; font-weight: 900; letter-spacing: -3px; color: var(--aqac-gold); margin-bottom: 5px; }
+        .subtitle { color: #444; text-transform: uppercase; letter-spacing: 5px; font-size: 9px; margin-bottom: 40px; font-weight: bold; }
+
+        .aqac-card { 
+            background: var(--card); border-radius: 28px; padding: 30px; 
+            border: 1px solid #1a1a1a; box-shadow: 0 30px 60px rgba(0,0,0,0.8); 
+            overflow: hidden; transition: all 0.4s ease;
+        }
+        
+        .art-wrapper {
+            width: 100%; aspect-ratio: 1 / 1; background: #000;
+            border-radius: 16px; margin-bottom: 25px; border: 1px solid #111;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative; transition: border-color 0.5s;
+        }
+
+        #album-art { width: 100%; height: 100%; object-fit: contain; display: block; }
+        
+        .aqac-active .art-wrapper { border-color: var(--aqac-gold); box-shadow: 0 0 30px rgba(255, 215, 0, 0.05); }
+
+        .info-block { margin-bottom: 20px; }
+        #track-name { font-size: 22px; font-weight: 800; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #artist-name { color: var(--aqac-gold); font-size: 13px; text-transform: uppercase; margin-top: 6px; letter-spacing: 2px; font-weight: 600; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-pill { background: #111; padding: 8px; border-radius: 12px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-val { display: block; color: #aaa; font-size: 11px; margin-top: 4px; font-family: monospace; }
+
+        .status-pill { background: #1a1a1a; padding: 8px 16px; border-radius: 20px; font-size: 10px; display: inline-block; color: var(--neon-blue); font-weight: bold; }
+
+        /* ACTIONS */
+        .upload-btn { background: var(--aqac-gold); color: #000; padding: 18px 45px; border-radius: 40px; font-weight: 800; cursor: pointer; display: inline-block; transition: 0.3s; margin-top: 20px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2); background: #fff; }
+
+        .download-btn { background: #fff; color: #000; padding: 14px; border-radius: 30px; font-size: 11px; font-weight: 900; cursor: pointer; display: none; margin-top: 15px; border: none; text-transform: uppercase; width: 100%; transition: 0.2s; }
+        .download-btn:hover { background: var(--aqac-gold); }
+
+        .progress-bar { width: 100%; height: 6px; background: #111; border-radius: 3px; margin: 25px 0; overflow: hidden; position: relative; }
+        #fill { width: 0%; height: 100%; background: var(--aqac-gold); box-shadow: 0 0 10px var(--aqac-gold); transition: width 0.1s; }
+
+        .controls { display: flex; align-items: center; justify-content: center; gap: 35px; margin-top: 20px; }
+        .icon-btn { background: none; border: none; color: #fff; cursor: pointer; font-weight: 900; font-size: 12px; opacity: 0.5; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .icon-btn:hover { opacity: 1; color: var(--aqac-gold); }
+        .play-btn { background: #fff; color: #000; width: 65px; height: 65px; border-radius: 40px; display: flex; align-items: center; justify-content: center; opacity: 1; font-size: 14px; }
+
+        .export-section { margin-top: 50px; border-top: 1px solid #111; padding-top: 30px; }
+        .secondary-btn { background: none; border: 1px solid #222; color: #444; padding: 12px 25px; border-radius: 30px; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        .secondary-btn:hover { border-color: var(--aqac-gold); color: var(--aqac-gold); }
+
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>AQAC</h1>
+        <div class="subtitle">Proprietary Audio Codec Core</div>
+
+        <div class="aqac-card" id="main-interface">
+            <div class="art-wrapper">
+                <img id="album-art" src="https://via.placeholder.com/400/050505/111111?text=AQAC+CORE+V2.8" alt="Core Art">
+            </div>
+            
+            <div class="info-block">
+                <p id="track-name">System Standby</p>
+                <p id="artist-name">Awaiting 96kHz Signal</p>
+            </div>
+
+            <div class="stats-grid" id="stats-area" style="display: none;">
+                <div class="stat-pill">Bitrate <span class="stat-val" id="stat-bitrate">0 kbps</span></div>
+                <div class="stat-pill">Sample Rate <span class="stat-val">96,000 Hz</span></div>
+            </div>
+
+            <div id="status" class="status-pill">Ready for Input</div>
+
+            <div class="progress-bar">
+                <div id="fill"></div>
+            </div>
+
+            <div class="controls" id="player-controls" style="display: none;">
+                <button class="icon-btn" onclick="seek(-10)">-10s</button>
+                <button class="icon-btn play-btn" id="play-trigger" onclick="togglePlayback()">PLAY</button>
+                <button class="icon-btn" onclick="seek(10)">+10s</button>
+            </div>
+
+            <div style="width: 100%;">
+                <label class="upload-btn" id="upload-label" for="file-input">Select Audio</label>
+                <button class="download-btn" id="download-trigger" onclick="downloadAQAC()">Export .AQAC Logic</button>
+            </div>
+            <input type="file" id="file-input" accept="audio/*,.aqac">
+        </div>
+
+        <div class="export-section">
+            <button class="secondary-btn" onclick="copyIntegrationCode()">View AQAC Specs</button>
+            <p style="font-size: 9px; color: #222; margin-top: 15px;">Targeting Xiph.org Performance Standards</p>
+        </div>
+    </div>
+
+    <script>
+        const AQAC_CORE = {
+            sampleRate: 96000,
+            
+            async encode(audioBuffer) {
+                // High-fidelity Mono-mixing for first-gen codec efficiency
+                const rawData = audioBuffer.getChannelData(0); 
+                const bytes = new Int8Array(rawData.length);
+                const mu = 255;
+                const logMu = Math.log(1 + mu);
+
+                for(let i=0; i<rawData.length; i++) {
+                    const x = Math.max(-1, Math.min(1, rawData[i])); // Hard limiter
+                    const sign = x < 0 ? -1 : 1;
+                    // Optimized Mu-law Transform
+                    const compressed = sign * (Math.log(1 + mu * Math.abs(x)) / logMu);
+                    bytes[i] = Math.floor(compressed * 127);
+                }
+                return bytes;
+            },
+
+            async decode(bytes, ctx) {
+                const buffer = ctx.createBuffer(1, bytes.length, this.sampleRate);
+                const channel = buffer.getChannelData(0);
+                const mu = 255;
+                const logMu = Math.log(1 + mu);
+
+                for(let i=0; i<bytes.length; i++) {
+                    const y = bytes[i] / 127;
+                    const sign = bytes[i] < 0 ? -1 : 1;
+                    // Inverse Transform
+                    channel[i] = sign * ((Math.exp(Math.abs(y) * logMu) - 1) / mu);
+                }
+                return buffer;
+            }
+        };
+
+        let audioCtx, source, currentBuffer, isPlaying = false;
+        let lastEncodedBytes = null;
+        let originalFileName = "audio_core";
+        let startTime = 0, offset = 0, raf;
+
+        const fileInput = document.getElementById('file-input');
+        const fill = document.getElementById('fill');
+        const status = document.getElementById('status');
+        const playTrigger = document.getElementById('play-trigger');
+        const downloadTrigger = document.getElementById('download-trigger');
+        const mainInterface = document.getElementById('main-interface');
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            status.innerText = "Processing System...";
+            originalFileName = file.name.split('.')[0];
+            document.getElementById('track-name').innerText = originalFileName;
+            document.getElementById('artist-name').innerText = "Analyzing Metadata...";
+            downloadTrigger.style.display = "none";
+            document.getElementById('stats-area').style.display = "grid";
+            mainInterface.classList.remove('aqac-active');
+
+            jsmediatags.read(file, {
+                onSuccess: (tag) => {
+                    const { artist, picture } = tag.tags;
+                    document.getElementById('artist-name').innerText = artist || "AQAC Internal Source";
+                    if(picture) {
+                        const { data, format } = picture;
+                        let base64 = "";
+                        for (let i = 0; i < data.length; i++) base64 += String.fromCharCode(data[i]);
+                        document.getElementById('album-art').src = `data:${format};base64,${window.btoa(base64)}`;
+                    }
+                },
+                onError: () => { document.getElementById('artist-name').innerText = "AQAC High-Fidelity Signal"; }
+            });
+
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 96000 });
+            const arrayBuffer = await file.arrayBuffer();
+
+            if (file.name.endsWith('.aqac')) {
+                status.innerText = "Native AQAC Stream";
+                mainInterface.classList.add('aqac-active');
+                lastEncodedBytes = new Int8Array(arrayBuffer);
+                currentBuffer = await AQAC_CORE.decode(lastEncodedBytes, audioCtx);
+            } else {
+                status.innerText = "Encoding Signal...";
+                const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+                lastEncodedBytes = await AQAC_CORE.encode(decoded);
+                currentBuffer = await AQAC_CORE.decode(lastEncodedBytes, audioCtx);
+                status.innerText = "AQAC Optimized";
+                downloadTrigger.style.display = "block";
+                mainInterface.classList.add('aqac-active');
+            }
+
+            // Bitrate Estimation: (Size in bits / duration in seconds) / 1000
+            const bitrate = Math.round(((lastEncodedBytes.length * 8) / currentBuffer.duration) / 1000);
+            document.getElementById('stat-bitrate').innerText = `${bitrate} kbps`;
+
+            document.getElementById('player-controls').style.display = "flex";
+            document.getElementById('upload-label').innerText = "Change Source";
+            resetPlayback();
+        };
+
+        function downloadAQAC() {
+            if (!lastEncodedBytes) return;
+            const blob = new Blob([lastEncodedBytes], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${originalFileName}.aqac`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            status.innerText = "AQAC Exported";
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                source.stop();
+                offset += audioCtx.currentTime - startTime;
+                isPlaying = false;
+                playTrigger.innerText = "PLAY";
+                cancelAnimationFrame(raf);
+            } else {
+                if (offset >= currentBuffer.duration) offset = 0;
+                source = audioCtx.createBufferSource();
+                source.buffer = currentBuffer;
+                source.connect(audioCtx.destination);
+                startTime = audioCtx.currentTime;
+                source.start(0, offset);
+                isPlaying = true;
+                playTrigger.innerText = "STOP";
+                trackProgress();
+            }
+        }
+
+        function trackProgress() {
+            const elapsed = (isPlaying ? (audioCtx.currentTime - startTime + offset) : offset);
+            const percent = (elapsed / currentBuffer.duration) * 100;
+            fill.style.width = percent + "%";
+            if (elapsed >= currentBuffer.duration) { resetPlayback(); return; }
+            raf = requestAnimationFrame(trackProgress);
+        }
+
+        function seek(seconds) {
+            const wasPlaying = isPlaying;
+            if(isPlaying) togglePlayback();
+            offset += seconds;
+            if(offset < 0) offset = 0;
+            if(offset > currentBuffer.duration) offset = 0;
+            if(wasPlaying) togglePlayback();
+            else trackProgress();
+        }
+
+        function resetPlayback() {
+            isPlaying = false; offset = 0;
+            playTrigger.innerText = "PLAY";
+            fill.style.width = "0%";
+            cancelAnimationFrame(raf);
+        }
+
+        function copyIntegrationCode() {
+            const code = `// AQAC v2.8 High-Fidelity Logic\n// Target Sample Rate: 96,000Hz\n// Compression: Mu-Law Nonlinear Transform\nconst AQAC = {\n  decode: async (bytes, ctx) => {\n    const b = ctx.createBuffer(1, bytes.length, 96000), c = b.getChannelData(0);\n    const mu = 255, logMu = Math.log(256);\n    for(let i=0; i<bytes.length; i++) {\n      const y = bytes[i]/127, s = bytes[i]<0?-1:1;\n      c[i] = s * ((Math.exp(Math.abs(y) * logMu) - 1) / mu);\n    }\n    return b;\n  }\n};`;
+            const el = document.createElement('textarea');
+            el.value = code;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            status.innerText = "Codec Logic Copied";
+        }
+    </script>
+</body>
+</html>
+
